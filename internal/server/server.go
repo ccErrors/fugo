@@ -7,8 +7,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/fugo-app/fugo/internal/storage"
@@ -41,6 +43,11 @@ func (sc *ServerConfig) Open(app AppHandler) error {
 	}
 
 	mux := http.NewServeMux()
+
+	// Serve static files
+	mux.HandleFunc("/", handleIndexHTML)
+	fs := http.FileServer(http.Dir("./web/static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
 	mux.HandleFunc("/api/schema/{name}", sc.handleSchema)
@@ -198,4 +205,13 @@ func (sc *ServerConfig) handleAgents(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error sending /api/agents response: %v", err)
 	}
+}
+
+func handleIndexHTML(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles(filepath.Join("web", "templates", "index.html"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, nil)
 }
