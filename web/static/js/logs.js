@@ -39,8 +39,6 @@ function loadAgents() {
 }
 
 function loadAgentLogs(agentName) {
-    console.log('Loading logs for agent:', agentName);
-    
     fetch(`/api/schema/${agentName}`)
         .then(response => response.json())
         .then(schemaData => {
