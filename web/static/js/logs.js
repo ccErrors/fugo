@@ -57,9 +57,12 @@ function loadAgentLogs(agentName) {
             // Load the records
             return fetch(`/api/query/${agentName}?limit=100`);
         })
-        .then(response => response.json())
-        .then(logs => {
+        .then(response => response.text())
+        .then(text => {
+            const lines = text.trim().split('\n');
+            const logs = lines.map(line => JSON.parse(line))
             const logsBody = document.getElementById('logs-body');
+
             const fields = JSON.parse(document.getElementById('logs-container').dataset.fields);
 
             let rowsHtml = '';
@@ -74,7 +77,6 @@ function loadAgentLogs(agentName) {
             console.error('Failed to load agent logs:', error);
         });
 }
-
 
 document.addEventListener('DOMContentLoaded', loadAgents);
 
