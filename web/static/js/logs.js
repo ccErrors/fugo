@@ -14,7 +14,7 @@ const agentsTemplate = `
 `;
 
 const tableTemplate = `
-    <table border="1">
+    <table class="table table-sm">
         <thead>
             <tr>
                 {% for field in schema %}
@@ -22,7 +22,7 @@ const tableTemplate = `
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="logs-body">
+        <tbody id="logs-body" class="table-group-divider">
         </tbody>
     </table>
 `;
