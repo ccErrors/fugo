@@ -35,15 +35,6 @@ const rowTemplate = `
     </tr>
 `;
 
-nunjucks.configure({ autoescape: true });
-nunjucks.env.addFilter('formatTimeIfNeeded', function(value, type) {
-    if (type === 'time') {
-        return new Date(value).toLocaleString();
-    }
-    return value;
-});
-
-
 function loadAgents() {
     fetch('/api/agents')
         .then(response => response.json())
@@ -59,6 +50,7 @@ function loadAgents() {
 function loadAgentLogs(agentName) {
     var fields = [];
     var fieldTypes = [];
+    
     fetch(`/api/schema/${agentName}`)
         .then(response => response.json())
         .then(schemaData => {
@@ -69,7 +61,7 @@ function loadAgentLogs(agentName) {
             document.getElementById('logs-container').innerHTML = tableHtml;
 
             fields = schema.map(field => field.name); // only field names
-            fieldTypes = schema.map(field => field.type); // only field types
+            fieldsTypes = schema.map(field => field.type); // only field types
             // Save fields for later use
             document.getElementById('logs-container').dataset.fields = JSON.stringify(fields);
 
@@ -84,8 +76,12 @@ function loadAgentLogs(agentName) {
 
             let rowsHtml = '';
 
+            console.log(fields)
+            console.log(fieldTypes)
+            console.log(logs)
+
             logs.forEach(log => {
-                rowsHtml += nunjucks.renderString(rowTemplate, { log, fields, fieldTypes });
+                rowsHtml += nunjucks.renderString(rowTemplate, { log: log, fields: fields });
             });
 
             logsBody.innerHTML = rowsHtml;
