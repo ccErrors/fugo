@@ -14,7 +14,7 @@ const agentsTemplate = `
 `;
 
 const tableTemplate = `
-    <table class="table table-sm">
+    <table class="table table-striped-columns table-sm m-4">
         <thead>
             <tr>
                 {% for field in schema %}
