@@ -29,8 +29,8 @@ const tableTemplate = `
 
 const rowTemplate = `
     <tr>
-        {% for field in fields %}
-        <td>{{ log[field] | formatTimeIfNeeded(fieldTypes[field]) }}</td>
+        {% for tdElement in tds %}
+        <td>{{ tdElement }}</td>
         {% endfor %}
     </tr>
 `;
@@ -49,21 +49,15 @@ function loadAgents() {
 
 function loadAgentLogs(agentName) {
     var fields = [];
-    var fieldTypes = [];
     
     fetch(`/api/schema/${agentName}`)
         .then(response => response.json())
         .then(schemaData => {
-            const schema = schemaData.schema;
+            fields = schemaData.schema;
 
             // Render the table with headers
-            const tableHtml = nunjucks.renderString(tableTemplate, { schema: schema });
+            const tableHtml = nunjucks.renderString(tableTemplate, { schema: fields });
             document.getElementById('logs-container').innerHTML = tableHtml;
-
-            fields = schema.map(field => field.name); // only field names
-            fieldsTypes = schema.map(field => field.type); // only field types
-            // Save fields for later use
-            document.getElementById('logs-container').dataset.fields = JSON.stringify(fields);
 
             // Load the records
             return fetch(`/api/query/${agentName}?limit=100`);
@@ -77,11 +71,21 @@ function loadAgentLogs(agentName) {
             let rowsHtml = '';
 
             console.log(fields)
-            console.log(fieldTypes)
             console.log(logs)
 
             logs.forEach(log => {
-                rowsHtml += nunjucks.renderString(rowTemplate, { log: log, fields: fields });
+                var tds = []
+
+                log.keys.forEach(key => {
+                    keyType = fields.find(field => field.name === key).type
+                    if (keyType === 'time') {
+                        tds.push(formatTimestamp(log[key]))
+                    } else {
+                        tds.push(log[key])
+                    }
+                })
+
+                rowsHtml += nunjucks.renderString(rowTemplate, { tds: tds });
             });
 
             logsBody.innerHTML = rowsHtml;
