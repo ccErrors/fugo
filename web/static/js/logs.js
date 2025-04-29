@@ -70,9 +70,6 @@ function loadAgentLogs(agentName) {
 
             let rowsHtml = '';
 
-            console.log(fields)
-            console.log(logs)
-
             logs.forEach(log => {
                 var tds = []
 
