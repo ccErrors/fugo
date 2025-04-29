@@ -30,10 +30,19 @@ const tableTemplate = `
 const rowTemplate = `
     <tr>
         {% for field in fields %}
-        <td>{{ log[field] }}</td>
+        <td>{{ log[field] | formatTimeIfNeeded(fieldTypes[field]) }}</td>
         {% endfor %}
     </tr>
 `;
+
+nunjucks.configure({ autoescape: true });
+nunjucks.env.addFilter('formatTimeIfNeeded', function(value, type) {
+    if (type === 'time') {
+        return new Date(value).toLocaleString();
+    }
+    return value;
+});
+
 
 function loadAgents() {
     fetch('/api/agents')
@@ -48,6 +57,8 @@ function loadAgents() {
 }
 
 function loadAgentLogs(agentName) {
+    var fields = [];
+    var fieldTypes = [];
     fetch(`/api/schema/${agentName}`)
         .then(response => response.json())
         .then(schemaData => {
@@ -57,7 +68,8 @@ function loadAgentLogs(agentName) {
             const tableHtml = nunjucks.renderString(tableTemplate, { schema: schema });
             document.getElementById('logs-container').innerHTML = tableHtml;
 
-            const fields = schema.map(field => field.name); // only field names
+            fields = schema.map(field => field.name); // only field names
+            fieldTypes = schema.map(field => field.type); // only field types
             // Save fields for later use
             document.getElementById('logs-container').dataset.fields = JSON.stringify(fields);
 
@@ -70,12 +82,10 @@ function loadAgentLogs(agentName) {
             const logs = lines.map(line => JSON.parse(line))
             const logsBody = document.getElementById('logs-body');
 
-            const fields = JSON.parse(document.getElementById('logs-container').dataset.fields);
-
             let rowsHtml = '';
 
             logs.forEach(log => {
-                rowsHtml += nunjucks.renderString(rowTemplate, { log: log, fields: fields });
+                rowsHtml += nunjucks.renderString(rowTemplate, { log, fields, fieldTypes });
             });
 
             logsBody.innerHTML = rowsHtml;
@@ -83,6 +93,10 @@ function loadAgentLogs(agentName) {
         .catch(error => {
             console.error('Failed to load agent logs:', error);
         });
+}
+
+function formatTimestamp(value) {
+    return new Date(value).toLocaleString;
 }
 
 document.addEventListener('DOMContentLoaded', loadAgents);
