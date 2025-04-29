@@ -76,14 +76,16 @@ function loadAgentLogs(agentName) {
             logs.forEach(log => {
                 var tds = []
 
-                log.keys.forEach(key => {
-                    keyType = fields.find(field => field.name === key).type
+                fields.forEach(field => {
+                    const key = field.name;
+                    const keyType = field.type;
+            
                     if (keyType === 'time') {
-                        tds.push(formatTimestamp(log[key]))
+                        tds.push(formatTimestamp(log[key]));
                     } else {
-                        tds.push(log[key])
+                        tds.push(log[key]);
                     }
-                })
+                });
 
                 rowsHtml += nunjucks.renderString(rowTemplate, { tds: tds });
             });
@@ -96,7 +98,7 @@ function loadAgentLogs(agentName) {
 }
 
 function formatTimestamp(value) {
-    return new Date(value).toLocaleString;
+    return new Date(value).toLocaleString();
 }
 
 document.addEventListener('DOMContentLoaded', loadAgents);
