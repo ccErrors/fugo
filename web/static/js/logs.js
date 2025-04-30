@@ -154,22 +154,22 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAgents();
 
     document.getElementById('btn-prev').addEventListener('click', () => {
-        if (!prevCursor) {
-            prevCursor = lastCursor.prev;
-        }
-
         if (currentAgentName) {
-            loadAgentLogs(currentAgentName, null, prevCursor);
+            if (prevCursor) {
+                loadAgentLogs(currentAgentName, null, prevCursor);
+            } else {
+                loadAgentLogs(currentAgentName, lastCursor.next, null);
+            }
         }
     });
 
     document.getElementById('btn-next').addEventListener('click', () => {
-        if (!nextCursor) {
-            nextCursor = lastCursor.next;
-        }
-
         if (currentAgentName) {
-            loadAgentLogs(currentAgentName, nextCursor, null);
+            if (nextCursor) {
+                loadAgentLogs(currentAgentName, nextCursor, null);
+            } else {
+                loadAgentLogs(currentAgentName, null, lastCursor.prev);
+            }
         }
     });
 });
