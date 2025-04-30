@@ -150,19 +150,12 @@ function formatTimestamp(value) {
     return new Date(value).toLocaleString();
 }
 
-function returnToLastCursor() {
-    if (currentAgentName) {
-        loadAgentLogs(currentAgentName, lastCursor.next, lastCursor.prev);
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     loadAgents();
 
     document.getElementById('btn-prev').addEventListener('click', () => {
         if (!prevCursor) {
-            returnToLastCursor();
-            return;
+            prevCursor = lastCursor.prev;
         }
 
         if (currentAgentName) {
@@ -172,8 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-next').addEventListener('click', () => {
         if (!nextCursor) {
-            returnToLastCursor();
-            return;
+            prevCursor = lastCursor.prev;
         }
 
         if (currentAgentName) {
