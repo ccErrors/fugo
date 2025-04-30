@@ -95,11 +95,11 @@ function loadAgentLogs(agentName, after = null, before = null) {
                 nextCursor = null;
                 prevCursor = null;
 
-                if (after) {
+                if (before) {
                     canReturnToNext = true;
                 }
 
-                if (before) {
+                if (after) {
                     canReturnToPrev = true;
                 }
             }
