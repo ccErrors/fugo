@@ -37,9 +37,13 @@ const rowTemplate = `
 
 const LIMIT = 100;
 
-const cursorStack = [];
 var prevCursor = null;
 var nextCursor = null;
+
+var lastCursor = {
+    prev: null,
+    next: null
+}
 
 function loadAgents() {
     fetch('/api/agents')
@@ -53,18 +57,21 @@ function loadAgents() {
         });
 }
 
-function loadAgentLogs(agentName, after = null, before = null, direction = null) {
+function loadAgentLogs(agentName, after = null, before = null) {
+    console.log(agentName, after, before);
     currentAgentName = agentName;
-
     var fields = [];
-
+    
     fetch(`/api/schema/${agentName}`)
         .then(response => response.json())
         .then(schemaData => {
             fields = schemaData.schema;
+
+            // Render the table with headers
             const tableHtml = nunjucks.renderString(tableTemplate, { schema: fields });
             document.getElementById('logs-container').innerHTML = tableHtml;
 
+            // Load the records
             let url = `/api/query/${agentName}?limit=${LIMIT}`;
             if (after) url += `&after=${after}`;
             if (before) url += `&before=${before}`;
@@ -73,7 +80,11 @@ function loadAgentLogs(agentName, after = null, before = null, direction = null)
         })
         .then(response => response.text())
         .then(text => {
+            var canReturnToNext = false;
+            var canReturnToPrev = false;
+
             const lines = text.trim().split('\n');
+
             const logs = lines.flatMap(line => {
                 try {
                     return [JSON.parse(line)];
@@ -82,18 +93,23 @@ function loadAgentLogs(agentName, after = null, before = null, direction = null)
                 }
             });
 
-            if (logs.length > 0) {
-                if (direction === 'next') {
-                    cursorStack.push(prevCursor);
-                } else if (direction === 'prev') {
-                    cursorStack.pop();
-                }
-
+            if (Array.isArray(logs) && logs.length > 0) {
                 nextCursor = logs[logs.length - 1]._cursor;
                 prevCursor = logs[0]._cursor;
+
+                lastCursor.prev = prevCursor;
+                lastCursor.next = nextCursor;
             } else {
                 nextCursor = null;
                 prevCursor = null;
+
+                if (before) {
+                    canReturnToNext = true;
+                }
+
+                if (after) {
+                    canReturnToPrev = true;
+                }
             }
 
             const logsBody = document.getElementById('logs-body');
@@ -101,12 +117,20 @@ function loadAgentLogs(agentName, after = null, before = null, direction = null)
             let rowsHtml = '';
 
             logs.forEach(log => {
-                const tds = fields.map(field => {
-                    const val = log[field.name];
-                    return field.type === 'time' ? formatTimestamp(val) : val;
+                var tds = []
+
+                fields.forEach(field => {
+                    const key = field.name;
+                    const keyType = field.type;
+            
+                    if (keyType === 'time') {
+                        tds.push(formatTimestamp(log[key]));
+                    } else {
+                        tds.push(log[key]);
+                    }
                 });
 
-                rowsHtml += nunjucks.renderString(rowTemplate, { tds });
+                rowsHtml += nunjucks.renderString(rowTemplate, { tds: tds });
             });
 
             logsBody.innerHTML = rowsHtml;
@@ -114,8 +138,8 @@ function loadAgentLogs(agentName, after = null, before = null, direction = null)
             const btnPrev = document.getElementById('btn-prev');
             const btnNext = document.getElementById('btn-next');
 
-            btnPrev.disabled = cursorStack.length === 0;
-            btnNext.disabled = !nextCursor;
+            btnPrev.disabled = !(prevCursor || canReturnToPrev);
+            btnNext.disabled = !(nextCursor || canReturnToNext);
         })
         .catch(error => {
             console.error('Failed to load agent logs:', error);
@@ -126,18 +150,34 @@ function formatTimestamp(value) {
     return new Date(value).toLocaleString();
 }
 
+function returnToLastCursor() {
+    if (currentAgentName) {
+        loadAgentLogs(currentAgentName, lastCursor.next, lastCursor.prev);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadAgents();
 
     document.getElementById('btn-prev').addEventListener('click', () => {
-        if (cursorStack.length > 0 && currentAgentName) {
-            loadAgentLogs(currentAgentName, null, cursorStack[cursorStack.length - 1], 'prev');
+        if (!prevCursor) {
+            returnToLastCursor();
+            return;
+        }
+
+        if (currentAgentName) {
+            loadAgentLogs(currentAgentName, null, prevCursor);
         }
     });
-    
+
     document.getElementById('btn-next').addEventListener('click', () => {
-        if (nextCursor && currentAgentName) {
-            loadAgentLogs(currentAgentName, nextCursor, null, 'next');
+        if (!nextCursor) {
+            returnToLastCursor();
+            return;
+        }
+
+        if (currentAgentName) {
+            loadAgentLogs(currentAgentName, nextCursor, null);
         }
     });
 });
