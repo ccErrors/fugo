@@ -53,6 +53,7 @@ function loadAgents() {
 }
 
 function loadAgentLogs(agentName, after = null, before = null) {
+    console.log(agentName, after, before);
     currentAgentName = agentName;
     var fields = [];
     
@@ -74,6 +75,9 @@ function loadAgentLogs(agentName, after = null, before = null) {
         })
         .then(response => response.text())
         .then(text => {
+            var canReturnToNext = false;
+            var canReturnToPrev = false;
+
             const lines = text.trim().split('\n');
 
             const logs = lines.flatMap(line => {
@@ -90,6 +94,14 @@ function loadAgentLogs(agentName, after = null, before = null) {
             } else {
                 nextCursor = null;
                 prevCursor = null;
+
+                if (after) {
+                    canReturnToNext = true;
+                }
+
+                if (before) {
+                    canReturnToPrev = true;
+                }
             }
 
             const logsBody = document.getElementById('logs-body');
@@ -115,8 +127,11 @@ function loadAgentLogs(agentName, after = null, before = null) {
 
             logsBody.innerHTML = rowsHtml;
 
-            document.getElementById('btn-prev').disabled = !prevCursor;
-            document.getElementById('btn-next').disabled = !nextCursor;
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            btnPrev.disabled = !(prevCursor || canReturnToPrev);
+            btnNext.disabled = !(nextCursor || canReturnToNext);
         })
         .catch(error => {
             console.error('Failed to load agent logs:', error);
