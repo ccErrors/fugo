@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-next').addEventListener('click', () => {
         if (!nextCursor) {
-            prevCursor = lastCursor.next;
+            nextCursor = lastCursor.next;
         }
 
         if (currentAgentName) {
