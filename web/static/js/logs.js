@@ -146,13 +146,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAgents();
 
     document.getElementById('btn-prev').addEventListener('click', () => {
-        if (currentAgentName && prevCursor) {
+        if (!prevCursor) {
+            prevCursor = null;
+        }
+
+        if (currentAgentName) {
             loadAgentLogs(currentAgentName, null, prevCursor);
         }
     });
 
     document.getElementById('btn-next').addEventListener('click', () => {
-        if (currentAgentName && nextCursor) {
+        if (!nextCursor) {
+            nextCursor = null;
+        }
+
+        if (currentAgentName) {
             loadAgentLogs(currentAgentName, nextCursor, null);
         }
     });
