@@ -35,6 +35,11 @@ const rowTemplate = `
     </tr>
 `;
 
+const LIMIT = 100;
+
+var prevCursor = null;
+var nextCursor = null;
+
 function loadAgents() {
     fetch('/api/agents')
         .then(response => response.json())
@@ -47,7 +52,8 @@ function loadAgents() {
         });
 }
 
-function loadAgentLogs(agentName) {
+function loadAgentLogs(agentName, after = null, before = null) {
+    currentAgentName = agentName;
     var fields = [];
     
     fetch(`/api/schema/${agentName}`)
@@ -60,12 +66,25 @@ function loadAgentLogs(agentName) {
             document.getElementById('logs-container').innerHTML = tableHtml;
 
             // Load the records
-            return fetch(`/api/query/${agentName}?limit=100`);
+            let url = `/api/query/${agentName}?limit=${LIMIT}`;
+            if (after) url += `&after=${after}`;
+            if (before) url += `&before=${before}`;
+
+            return fetch(url);
         })
         .then(response => response.text())
         .then(text => {
             const lines = text.trim().split('\n');
             const logs = lines.map(line => JSON.parse(line))
+
+            if (Array.isArray(logs) && logs.length > 0) {
+                nextCursor = logs[logs.length - 1]._cursor;
+                prevCursor = logs[0]._cursor;
+            } else {
+                nextCursor = null;
+                prevCursor = null;
+            }
+
             const logsBody = document.getElementById('logs-body');
 
             let rowsHtml = '';
@@ -88,6 +107,9 @@ function loadAgentLogs(agentName) {
             });
 
             logsBody.innerHTML = rowsHtml;
+
+            document.getElementById('btn-prev').disabled = !prevCursor;
+            document.getElementById('btn-next').disabled = !nextCursor;
         })
         .catch(error => {
             console.error('Failed to load agent logs:', error);
@@ -98,5 +120,18 @@ function formatTimestamp(value) {
     return new Date(value).toLocaleString();
 }
 
-document.addEventListener('DOMContentLoaded', loadAgents);
+document.addEventListener('DOMContentLoaded', () => {
+    loadAgents();
 
+    document.getElementById('btn-prev').addEventListener('click', () => {
+        if (currentAgentName && prevCursor) {
+            loadAgentLogs(currentAgentName, null, prevCursor);
+        }
+    });
+
+    document.getElementById('btn-next').addEventListener('click', () => {
+        if (currentAgentName && nextCursor) {
+            loadAgentLogs(currentAgentName, nextCursor, null);
+        }
+    });
+});
