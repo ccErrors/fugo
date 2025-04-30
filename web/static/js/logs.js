@@ -75,7 +75,14 @@ function loadAgentLogs(agentName, after = null, before = null) {
         .then(response => response.text())
         .then(text => {
             const lines = text.trim().split('\n');
-            const logs = lines.map(line => JSON.parse(line))
+
+            const logs = lines.flatMap(line => {
+                try {
+                    return [JSON.parse(line)];
+                } catch {
+                    return [];
+                }
+            });
 
             if (Array.isArray(logs) && logs.length > 0) {
                 nextCursor = logs[logs.length - 1]._cursor;
