@@ -94,11 +94,11 @@ function loadAgentLogs(agentName, after = null, before = null) {
             });
 
             if (Array.isArray(logs) && logs.length > 0) {
-                nextCursor = logs[logs.length - 1]._cursor;
-                prevCursor = logs[0]._cursor;
-
                 lastCursor.prev = prevCursor;
                 lastCursor.next = nextCursor;
+
+                nextCursor = logs[logs.length - 1]._cursor;
+                prevCursor = logs[0]._cursor;
             } else {
                 nextCursor = null;
                 prevCursor = null;
