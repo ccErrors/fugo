@@ -23,6 +23,7 @@ type ServerConfig struct {
 
 	// CORS
 	Cors *CorsConfig `yaml:"cors,omitempty"`
+	Web  bool        `yaml:"web,omitempty"`
 
 	server *http.Server
 	app    AppHandler
@@ -44,10 +45,12 @@ func (sc *ServerConfig) Open(app AppHandler) error {
 
 	mux := http.NewServeMux()
 
-	// Serve static files
-	mux.HandleFunc("/", handleIndexHTML)
-	fs := http.FileServer(http.Dir("./web/static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	// Serve static files only if Web is enabled
+	if sc.Web {
+		mux.HandleFunc("/", handleIndexHTML)
+		fs := http.FileServer(http.Dir("./web/static"))
+		mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	}
 
 	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
 	mux.HandleFunc("/api/schema/{name}", sc.handleSchema)
