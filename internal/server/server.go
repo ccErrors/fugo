@@ -2,12 +2,13 @@ package server
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -15,6 +16,12 @@ import (
 
 	"github.com/fugo-app/fugo/internal/storage"
 )
+
+//go:embed web/static/*
+var staticFiles embed.FS
+
+//go:embed web/templates/index.html
+var indexHTML embed.FS
 
 type ServerConfig struct {
 	// Listen address and port for HTTP server
@@ -48,8 +55,13 @@ func (sc *ServerConfig) Open(app AppHandler) error {
 	// Serve static files only if Web is enabled
 	if sc.Web {
 		mux.HandleFunc("/", handleIndexHTML)
-		fs := http.FileServer(http.Dir("./web/static"))
-		mux.Handle("/static/", http.StripPrefix("/static/", fs))
+
+		staticFS, err := fs.Sub(staticFiles, "web/static")
+		if err != nil {
+			return fmt.Errorf("failed to create sub FS for static files: %w", err)
+		}
+
+		mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	}
 
 	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
@@ -211,10 +223,17 @@ func (sc *ServerConfig) handleAgents(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleIndexHTML(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles(filepath.Join("web", "templates", "index.html"))
+	tmplBytes, err := indexHTML.ReadFile("web/templates/index.html")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
 		return
 	}
+
+	tmpl, err := template.New("index").Parse(string(tmplBytes))
+	if err != nil {
+		http.Error(w, "Failed to parse template", http.StatusInternalServerError)
+		return
+	}
+
 	tmpl.Execute(w, nil)
 }
